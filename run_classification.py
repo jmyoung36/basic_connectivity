@@ -10,7 +10,7 @@ import numpy as np
 from sklearn import svm, cross_validation, metrics
 
 # set directory
-kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/kernels/'
+kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/KCL_SC1/kernels/'
 
 # number of folds for cross-validation
 n = 10
@@ -22,7 +22,7 @@ specs = np.zeros((n, 1))
 preds = np.zeros((140,))
 
 # load kernel data
-Kernel_data = np.genfromtxt(kernel_dir + 'K_log_euclidean_0.25_0.25_.csv', delimiter=',')
+Kernel_data = np.genfromtxt(kernel_dir + 'K_edge.csv', delimiter=',')
 
 # split kernel data into labels (first column) and kernel matrix (everything else)
 labels = Kernel_data[:,0]

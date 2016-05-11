@@ -10,8 +10,8 @@ import numpy as np
 import connectivity_utils as utils
 
 # set directories
-data_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/matrix_unsmooth/'
-kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/kernels/'
+data_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/KCL_SC1/matrix_unsmooth/'
+kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/KCL_SC1/kernels/'
 
 # read in connectivity data and labels
 connectivity_data = utils.load_connectivity_data(data_dir)
