@@ -13,16 +13,19 @@ from sklearn import svm, cross_validation, metrics
 kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/KCL_SC1/kernels/'
 
 # number of folds for cross-validation
-n = 10
+n_folds = 10
+
+# number of subjects
+n_subjects = 140
 
 # containers for per-fold accuracy, sensitivity and specificity, all predictions
-accs = np.zeros((n, 1))
-senss = np.zeros((n, 1))
-specs = np.zeros((n, 1))
-preds = np.zeros((140,))
+accs = np.zeros((n_folds, 1))
+senss = np.zeros((n_folds, 1))
+specs = np.zeros((n_folds, 1))
+preds = np.zeros((n_subjects,))
 
 # load kernel data
-Kernel_data = np.genfromtxt(kernel_dir + 'K_edge.csv', delimiter=',')
+Kernel_data = np.genfromtxt(kernel_dir + 'K_rw_overlap.csv', delimiter=',')
 
 # split kernel data into labels (first column) and kernel matrix (everything else)
 labels = Kernel_data[:,0]
@@ -31,9 +34,15 @@ K = Kernel_data[:, 1:]
 # initialise the classifier
 clf = svm.SVC(kernel='precomputed')
 
+# optional shuffle
+perm = np.random.permutation(n_subjects)
+labels = labels[perm]
+K = K[perm, :][:, perm]
+
 # n-fold cross validation
-folds = cross_validation.KFold(140, n_folds = n)
-for i, fold in zip(range(n), folds) :
+#folds = cross_validation.StratifiedKFold(labels, n_folds = n_folds)
+folds = cross_validation.KFold(n_subjects, n_folds = n_folds)
+for i, fold in zip(range(n_folds), folds) :
     
     train_index = fold[0]
     test_index = fold[1]
@@ -49,6 +58,7 @@ for i, fold in zip(range(n), folds) :
     senss[i] = float(sum(fold_preds[labels_test == 1] == 1))/sum(labels_test == 1)
     specs[i] = float(sum(fold_preds[labels_test == 0] == 0))/sum(labels_test == 0)
     
+print metrics.roc_auc_score(labels, preds)
 print metrics.accuracy_score(labels, preds)
 print float(sum(preds[labels == 1] == 1))/sum(labels == 1)
 print float(sum(preds[labels == 0] == 0))/sum(labels == 0)
