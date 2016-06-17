@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May 19 15:27:36 2016
+Created on Tue Jun  7 09:08:31 2016
 
 @author: jonyoung
 """
@@ -65,7 +65,7 @@ def mccv_roc(data, labels, classifier, n_iter, test_size, metric):
         dv = classifier.decision_function(K_test)
         accs.append(metrics.roc_auc_score(labels_test, dv))
                 
-    return accs
+    return accs    
     
 def repeated_k_cv(data, labels, classifier, repeats, k, metric) :
     
@@ -91,7 +91,7 @@ kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/KCL_SC1/kernels/'
 
 # parameters for nested CV loop
 n_folds = 10
-n_reps = 150
+n_reps = 250
 
 # read in all kernels
 kernel_dict = {}
@@ -122,10 +122,10 @@ for i in range(20) :
         kernel_dict.update({key: K})
   
 # create a data structure to hold grid search results, selected parameters, fold results and predictions
-grid_search_results = np.zeros((20, 20))
+grid_search_results = np.zeros((20, 20, 12))
 fold_results = np.zeros((n_folds,))
 preds = np.zeros((len(labels),))
-selected_parameters = np.zeros((n_folds, 2))
+selected_parameters = np.zeros((n_folds, 3))
 
 clf = svm.SVC(kernel='precomputed') 
 
@@ -142,7 +142,7 @@ for train_index, test_index in kf:
     # do a grid search on the training group
     
     # loop through possible parameters    
-    parameter_results = np.zeros((20, 20))
+    parameter_results = np.zeros((20, 20, 12))
     
     for i in range(20) :
         
@@ -151,13 +151,20 @@ for train_index, test_index in kf:
             # load the kernel
             key = (2 ** i) * (3 ** j)
             K_fold = kernel_dict[key]
-
-            #print 'gamma = ' + str(2 ** (i - 10))
-            #print 'sigma = ' + str(2 ** (j - 10))
             
-            # get MCCV results from training data/labels            
-            K_fold_train = K_fold[train_index, :][:, train_index]
-            parameter_results[i, j] = np.mean(mccv_roc(K_fold_train, labels_fold_train, clf, n_reps, 0.1, 'accuracy_score'))
+            
+            # loop through values of SVM C parameter
+            for k in range(12) :
+                
+                c_val = 2 ** k
+                clf = svm.SVC(kernel='precomputed', C=c_val)
+
+                #print 'gamma = ' + str(2 ** (i - 10))
+                #print 'sigma = ' + str(2 ** (j - 10))
+            
+                # get MCCV results from training data/labels            
+                K_fold_train = K_fold[train_index, :][:, train_index]
+                parameter_results[i, j, k] = np.mean(mccv(K_fold_train, labels_fold_train, clf, n_reps, 0.33, 'accuracy_score'))
                     
     #print 'parameter results:'
     #print parameter_results
@@ -168,20 +175,23 @@ for train_index, test_index in kf:
     # store the scores across all parameters for the fold
     grid_search_results = grid_search_results + parameter_results
     
-    # train on training data with the best parameters/kernel and test on the left over data
+    # train on training data with the best parameters and test on the left over data
     key = (2 ** best_parameters[0]) * (3 ** best_parameters[1])
+    c_val = 2 ** best_parameters[2]
     print 'best_parameters = ' + str(best_parameters)
     print 'best value of gamma is ' + str(2 ** (best_parameters[0] - 10))    
-    print 'best value of sigma is ' + str(2 ** (best_parameters[1] - 10))     
+    print 'best value of sigma is ' + str(2 ** (best_parameters[1] - 10))  
+    print 'best value of c is ' + str(c_val)     
     K = kernel_dict[key]
     K_train = K[train_index, :][:, train_index]
     K_test = K[test_index, :][:, train_index]
+    clf = svm.SVC(kernel='precomputed', C=c_val)
     clf.fit(K_train, labels_fold_train)
     fold_preds = clf.predict(K_test)
     fold_result = metrics.accuracy_score(labels_fold_test, fold_preds)
     fold_results[ind] = fold_result
     preds[test_index] = fold_preds
-    selected_parameters[ind, :] =  np.array([best_parameters[0], best_parameters[1]])
+    selected_parameters[ind, :] =  np.array([best_parameters[0], best_parameters[1], best_parameters[2]])
     print 'Accuracy for this fold = ' + str(fold_result)     
     ind += 1
 
@@ -209,7 +219,7 @@ print np.mean(fold_results)
 #
 #np.savetxt(metadata_dir + 'plot_results_rescaled_SPMK.csv', plot_results_SPMK, delimiter=',')
 #np.savetxt(metadata_dir + 'plot_results_rescaled_lin.csv', plot_results_lin, delimiter=',')
-#
+
 #best_results = np.zeros((20, 20))
 #for i in range(20) :
 #    

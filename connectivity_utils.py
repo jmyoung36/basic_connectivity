@@ -11,6 +11,7 @@ Created on Tue May  3 15:18:19 2016
 import numpy as np
 import glob
 import re
+from sklearn.preprocessing import scale
 
 # define natural sort key so we sort files into correct (natural) order
 # taken from http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort?lq=1
@@ -21,7 +22,7 @@ def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
 # take a directory containing .txt files containing connectivity data and a 
 # .csv file with the per-subject labels. Load the connectvity data into a numpy
 # matrix with one row per subject and return this along with the set of labels
-def load_connectivity_data(data_dir):
+def load_connectivity_data(data_dir, standardise=False):
     
     # list of data files
     connectivity_files = glob.glob(data_dir + '*.txt')
@@ -47,6 +48,11 @@ def load_connectivity_data(data_dir):
         connectivity_file_data = np.array(map(lambda x: [float(element) for element in x if not element == '\r\n'], connectivity_file_data))
         connectivity_file_data[np.diag_indices(90)] = 0
         connectivity_data[i, :] = np.reshape(connectivity_file_data, (1, 8100))
+        
+        # optional standardisation of variables with z-transform
+        if standardise :
+            
+            connectivity_data = scale(connectivity_data, axis=0) 
         
     return connectivity_data
     

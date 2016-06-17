@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May  5 10:14:10 2016
+Created on Thu Jun  9 14:33:53 2016
 
 @author: jonyoung
 """
 
 # import the stuff we need
 import numpy as np
-from sklearn import svm, cross_validation, metrics, decomposition
-from matplotlib import pyplot as plt
+from sklearn import svm, cross_validation, metrics
 
 # set directory
 kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/kernels/'
@@ -25,28 +24,15 @@ senss = np.zeros((n_folds, 1))
 specs = np.zeros((n_folds, 1))
 preds = np.zeros((n_subjects,))
 
-# load kernel data
-Kernel_data = np.genfromtxt(kernel_dir + 'K_edge.csv', delimiter=',')
+# load connectivity data
+connectivity_data = np.genfromtxt(kernel_dir + 'adjusted_connectivity_data.csv', delimiter=',')
 
-# split kernel data into labels (first column) and kernel matrix (everything else)
-labels = Kernel_data[:,0]
-labels[:140] = 0
-labels[140:] = 1
-K = Kernel_data[:, 1:]
+# load labels
+label_data = np.genfromtxt(kernel_dir + 'K_edge.csv', delimiter=',')
+labels = label_data[:,0]
 
-#kpca = decomposition.KernelPCA(kernel='precomputed')
-#X = kpca.fit_transform(K)
-#plt.scatter(X[:140,0], X[:140,1], color='red', label='group 1')
-#plt.scatter(X[140:,0], X[140:,1], color='blue', label='group 2')
-
-
-
-
-
-
-
-
-
+# calculate kernel
+K = np.dot(connectivity_data, np.transpose(connectivity_data))
 
 # initialise the classifier
 clf = svm.SVC(kernel='precomputed')
