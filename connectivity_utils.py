@@ -56,6 +56,41 @@ def load_connectivity_data(data_dir, standardise=False):
         
     return connectivity_data
     
+# take a directory containing .txt files containing timecourse data and a 
+# .csv file with the per-subject labels. Load the connectvity data into a 3d
+# numpy array of number of subjectsx number of regions x number of timepoints
+def load_timecourse_data(data_dir):
+    
+    # list of data files
+    timecourse_files = glob.glob(data_dir + '*.txt')
+    n_files = len(timecourse_files)
+    
+    # sort into numerical order
+    timecourse_files.sort(key=natural_sort_key)    
+    
+    # generate numpy arrays for data & labels
+    # each subject is 90 regions x 140 timepoints
+    timecourse_data = np.zeros((n_files, 90, 140))
+    
+    # roll through files in order
+    for timecourse_file, i in zip(timecourse_files, range(len(timecourse_files))) :
+        
+#        with open(timecourse_file) as infile:
+#            connectivity_file_data = infile.readlines()
+#        connectivity_file_data = map(lambda x: x.split('\t'), connectivity_file_data)
+#
+#        
+#        # tidy up - split into indidual elements, remove returns/newlines, convert 
+#        # to float, convert to np array, set diagonals to zero, and reshape
+#        connectivity_file_data = np.array(map(lambda x: [float(element) for element in x if not element == '\r\n'], connectivity_file_data))
+#        connectivity_file_data[np.diag_indices(90)] = 0
+#        connectivity_data[i, :] = np.reshape(connectivity_file_data, (1, 8100))
+        print timecourse_file
+        print np.shape(np.genfromtxt(timecourse_file, delimiter='\t'))
+        #timecourse_data[i, :, :] = np.transpose(np.genfromtxt(timecourse_file, delimiter='\t')[:, :90])
+        
+    return timecourse_data
+    
 def load_labels(data_dir) :
             
     # read in label data and convert to np array
@@ -64,8 +99,7 @@ def load_labels(data_dir) :
     labels = np.array(map(lambda label: int(label[0]), labels))
     return labels
         
-    
-    
+foo = load_timecourse_data('/Users/jonyoung/Data/KCL_SC_Unsmooth_TimeCourse/')
 
     
     
