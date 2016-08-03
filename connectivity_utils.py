@@ -22,7 +22,7 @@ def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
 # take a directory containing .txt files containing connectivity data and a 
 # .csv file with the per-subject labels. Load the connectvity data into a numpy
 # matrix with one row per subject and return this along with the set of labels
-def load_connectivity_data(data_dir, standardise=False):
+def load_connectivity_data(data_dir, standardise=True):
     
     # list of data files
     connectivity_files = glob.glob(data_dir + '*.txt')
@@ -46,15 +46,15 @@ def load_connectivity_data(data_dir, standardise=False):
         # tidy up - split into indidual elements, remove returns/newlines, convert 
         # to float, convert to np array, set diagonals to zero, and reshape
         connectivity_file_data = np.array(map(lambda x: [float(element) for element in x if not element == '\r\n'], connectivity_file_data))
-        connectivity_file_data[np.diag_indices(90)] = 0
+        #connectivity_file_data[np.diag_indices(90)] = 0
         connectivity_data[i, :] = np.reshape(connectivity_file_data, (1, 8100))
         
         # optional standardisation of variables with z-transform
-        if standardise :
+        #if standardise :
             
-            connectivity_data = scale(connectivity_data, axis=0) 
+         #   connectivity_data = scale(connectivity_data, axis=0) 
         
-    return connectivity_data
+    return connectivity_data, connectivity_files
     
 # take a directory containing .txt files containing timecourse data and a 
 # .csv file with the per-subject labels. Load the connectvity data into a 3d
@@ -72,24 +72,19 @@ def load_timecourse_data(data_dir):
     # each subject is 90 regions x 140 timepoints
     timecourse_data = np.zeros((n_files, 90, 140))
     
+    # empty list of files actually used
+    final_files = []
+    
     # roll through files in order
     for timecourse_file, i in zip(timecourse_files, range(len(timecourse_files))) :
         
-#        with open(timecourse_file) as infile:
-#            connectivity_file_data = infile.readlines()
-#        connectivity_file_data = map(lambda x: x.split('\t'), connectivity_file_data)
-#
-#        
-#        # tidy up - split into indidual elements, remove returns/newlines, convert 
-#        # to float, convert to np array, set diagonals to zero, and reshape
-#        connectivity_file_data = np.array(map(lambda x: [float(element) for element in x if not element == '\r\n'], connectivity_file_data))
-#        connectivity_file_data[np.diag_indices(90)] = 0
-#        connectivity_data[i, :] = np.reshape(connectivity_file_data, (1, 8100))
-        #print timecourse_file
-        #print np.shape(np.genfromtxt(timecourse_file, delimiter='\t'))
+        print timecourse_file
+        
         timecourse_data[i, :, :] = np.transpose(np.genfromtxt(timecourse_file, delimiter='\t')[:, :90])
         
-    return timecourse_data
+        final_files = final_files + [timecourse_file]
+        
+    return timecourse_data, final_files
     
 def load_labels(data_dir) :
             
