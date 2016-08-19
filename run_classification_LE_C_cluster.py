@@ -89,9 +89,13 @@ def repeated_k_cv(data, labels, classifier, repeats, k, metric) :
         
 # directories
 kernel_dir = '/home/k1511004/Data/connectivity_data/KCL_SC1/kernels/'
+#kernel_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/KCL_SC1/kernels/'
+results_dir = '/home/k1511004/Data/connectivity_data/'
+#results_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/'
+       
 
 # parameters for nested CV loop
-folds = int(sys.argv[1])
+fold = int(sys.argv[1])
 n_reps = 250
 
 # read in all kernels
@@ -107,12 +111,13 @@ for i in range(20) :
         key = (2 ** i) * (3 ** j)
              
         # read in the kernel file
-        K = np.genfromtxt(kernel_dir + 'K_log_euclidean_' + str(i-10) + '_' + str(j-10) + '.csv', delimiter=',')
+        K = np.genfromtxt(kernel_dir + 'K_log_euclidean_sparse_inverse_cov_' + str(i-10) + '_' + str(j-10) + '.csv', delimiter=',')
 
-        # pull labels
+        # pull labels and size
         if i == 0 and j == 0 :
             
             labels = K[:,0]
+            n_subjects = np.shape(K)[0]
             
         # pull out kernel matrix and correct diagonal            
         K = K[:,1:]
@@ -124,125 +129,80 @@ for i in range(20) :
   
 # create a data structure to hold grid search results, selected parameters, fold results and predictions
 grid_search_results = np.zeros((20, 20, 12))
-fold_results = np.zeros((n_folds,))
 preds = np.zeros((len(labels),))
-selected_parameters = np.zeros((n_folds, 3))
+
 
 clf = svm.SVC(kernel='precomputed') 
 
-# proper nested grid 10-fold cv with inner loop to select parameters
-kf = cross_validation.StratifiedKFold(labels, n_folds, shuffle=True) 
-ind = 0 
-for train_index, test_index in kf:
+# one fold of nested grid 10-fold cv with inner loop to select parameters
+step_size = int(np.ceil(n_subjects/10.0))
+start_ind = (fold-1) * step_size
+stop_ind = np.min((start_ind + step_size, n_subjects))
+train_index = np.arange(n_subjects)
+train_index = np.delete(train_index, range(start_ind, stop_ind))
+test_index = np.arange(n_subjects)[start_ind:stop_ind]
+
+print 'fold = ' + str(fold)
     
-    print 'ind = ' + str(ind)
+labels_fold_train = labels[train_index]
+labels_fold_test = labels[test_index]
     
-    labels_fold_train = labels[train_index]
-    labels_fold_test = labels[test_index]
+# do a grid search on the training group
     
-    # do a grid search on the training group
+# loop through possible parameters    
+parameter_results = np.zeros((20, 20, 12))
     
-    # loop through possible parameters    
-    parameter_results = np.zeros((20, 20, 12))
+for i in range(20) :
     
-    for i in range(20) :
+    print i
         
-        for j in range(20) :
+    for j in range(20) :
+        
+        print j
             
-            # load the kernel
-            key = (2 ** i) * (3 ** j)
-            K_fold = kernel_dict[key]
+        # load the kernel
+        key = (2 ** i) * (3 ** j)
+        K_fold = kernel_dict[key]
             
             
-            # loop through values of SVM C parameter
-            for k in range(12) :
+        # loop through values of SVM C parameter
+        for k in range(12) :
                 
-                c_val = 2 ** k
-                clf = svm.SVC(kernel='precomputed', C=c_val)
+            c_val = 2 ** k
+            clf = svm.SVC(kernel='precomputed', C=c_val)
 
-                #print 'gamma = ' + str(2 ** (i - 10))
-                #print 'sigma = ' + str(2 ** (j - 10))
+            #print 'gamma = ' + str(2 ** (i - 10))
+            #print 'sigma = ' + str(2 ** (j - 10))
             
-                # get MCCV results from training data/labels            
-                K_fold_train = K_fold[train_index, :][:, train_index]
-                parameter_results[i, j, k] = np.mean(mccv(K_fold_train, labels_fold_train, clf, n_reps, 0.33, 'accuracy_score'))
+            # get MCCV results from training data/labels            
+            K_fold_train = K_fold[train_index, :][:, train_index]
+            parameter_results[i, j, k] = np.mean(mccv(K_fold_train, labels_fold_train, clf, n_reps, 0.1, 'accuracy_score'))
                     
-    #print 'parameter results:'
-    #print parameter_results
+#print 'parameter results:'
+print parameter_results
            
-    # find most accurate set of parameters
-    best_parameters = np.unravel_index(parameter_results.argmax(), parameter_results.shape)
-                        
-    # store the scores across all parameters for the fold
-    grid_search_results = grid_search_results + parameter_results
-    
-    # train on training data with the best parameters and test on the left over data
-    key = (2 ** best_parameters[0]) * (3 ** best_parameters[1])
-    c_val = 2 ** best_parameters[2]
-    print 'best_parameters = ' + str(best_parameters)
-    print 'best value of gamma is ' + str(2 ** (best_parameters[0] - 10))    
-    print 'best value of sigma is ' + str(2 ** (best_parameters[1] - 10))  
-    print 'best value of c is ' + str(c_val)     
-    K = kernel_dict[key]
-    K_train = K[train_index, :][:, train_index]
-    K_test = K[test_index, :][:, train_index]
-    clf = svm.SVC(kernel='precomputed', C=c_val)
-    clf.fit(K_train, labels_fold_train)
-    fold_preds = clf.predict(K_test)
-    fold_result = metrics.accuracy_score(labels_fold_test, fold_preds)
-    fold_results[ind] = fold_result
-    preds[test_index] = fold_preds
-    selected_parameters[ind, :] =  np.array([best_parameters[0], best_parameters[1], best_parameters[2]])
-    print 'Accuracy for this fold = ' + str(fold_result)     
-    ind += 1
+# find most accurate set of parameters
+best_parameters = np.unravel_index(parameter_results.argmax(), parameter_results.shape)
+                           
+# train on training data with the best parameters and test on the left over data
+key = (2 ** best_parameters[0]) * (3 ** best_parameters[1])
+c_val = 2 ** best_parameters[2]
+print 'best_parameters = ' + str(best_parameters)
+print 'best value of gamma is ' + str(2 ** (best_parameters[0] - 10))    
+print 'best value of sigma is ' + str(2 ** (best_parameters[1] - 10))  
+print 'best value of c is ' + str(c_val)     
+K = kernel_dict[key]
+K_train = K[train_index, :][:, train_index]
+K_test = K[test_index, :][:, train_index]
+clf = svm.SVC(kernel='precomputed', C=c_val)
+clf.fit(K_train, labels_fold_train)
+fold_preds = clf.predict(K_test)
+fold_acc = metrics.accuracy_score(labels_fold_test, fold_preds)
+print 'Accuracy for this fold = ' + str(fold_acc)
 
-print 'selected_parameters:'
-print selected_parameters
-print 'LE results:'
-print fold_results                
-print np.mean(fold_results)
-#print metrics.accuracy_score(labels, preds)
-#print np.sqrt(metrics.mean_squared_error(IXI_metadata['AGE'].tolist(), SPMK_results))
-#
-#print 'SPMK grid search results:'
-#print mean_intersection_results/n_folds
-#print mean_bhattacharyya_results/n_folds
-#
-#
-## save individual score for plotting
-#plot_results_SPMK = np.zeros((2, len(IXI_metadata)))
-#plot_results_SPMK[0, :] = IXI_metadata['AGE']
-#plot_results_SPMK[1, :] = SPMK_results
-#
-#plot_results_lin = np.zeros((2, len(IXI_metadata)))
-#plot_results_lin[0, :] = IXI_metadata['AGE']
-#plot_results_lin[1, :] = lin_results
-#
-#np.savetxt(metadata_dir + 'plot_results_rescaled_SPMK.csv', plot_results_SPMK, delimiter=',')
-#np.savetxt(metadata_dir + 'plot_results_rescaled_lin.csv', plot_results_lin, delimiter=',')
+# save prediction results and labels for this fold
+fold_results = np.transpose(np.vstack((labels_fold_test, fold_preds))) 
+np.savetxt(results_dir + 'LE_C_cluster_results_fold_' + str(fold) + '.csv', fold_results, delimiter=',')
 
-#best_results = np.zeros((20, 20))
-#for i in range(20) :
-#    
-#    for j in range(20) :
-#            
-#        # load the kernel
-#        key = (2 ** i) * (3 ** j)
-#        K = kernel_dict[key]
-#        
-#        preds = np.zeros((len(labels),))
-#            
-#        # get 10-fold cv results
-#        kf = cross_validation.StratifiedKFold(labels, n_folds, shuffle=True)
-#        
-#        for train_index, test_index in kf :
-#                
-#            K_train = K[train_index, :][:, train_index]
-#            K_test = K[test_index, :][:, train_index]
-#            labels_train = labels[train_index]
-#            clf.fit(K_train, labels_train)
-#            preds[test_index] = clf.predict(K_test)
-#                            
-#        best_results[i, j] = metrics.accuracy_score(preds, labels)
-#        
-#print best_results
+# save parameter results for this fold
+np.save(results_dir + 'LE_C_cluster_parameters_fold_' + str(fold) + '.npy', parameter_results)

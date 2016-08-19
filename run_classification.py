@@ -34,6 +34,7 @@ labels[:140] = 0
 labels[140:] = 1
 K = Kernel_data[:, 1:]
 
+
 #kpca = decomposition.KernelPCA(kernel='precomputed')
 #X = kpca.fit_transform(K)
 #plt.scatter(X[:140,0], X[:140,1], color='red', label='group 1')
