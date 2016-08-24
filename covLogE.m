@@ -32,13 +32,13 @@ function K = covLogE(hyp, x, z, i)
 function element = calcLogE(G1, G2, sigma, gamma)
 
 % reshape G1 and G2 from 1 by n^2 vectors n by n square matrices M
-n = size(G1, 1);
+n = sqrt(size(G1, 2));
 M1 = reshape(G1, [n, n]);
 M2 = reshape(G2, [n, n]);
 
 % calculate degree matrices D
-D1 = sum(M1, 2);
-D2 = sum(M2, 2);
+D1 = diag(sum(M1, 2));
+D2 = diag(sum(M2, 2));
 
 % form graph Laplacians L as the degree matrix minus the original matrix
 L1 = D1 - M1;
@@ -47,6 +47,9 @@ L2 = D2 - M2;
 % calculate regularised Laplacians S as L + gamma I
 S1 = L1 + (gamma * eye(n));
 S2 = L2 + (gamma * eye(n));
+
+
+
 
 % return the kernel function result
 %element = exp(-(norm((logm(S1) - logm(S2)), 'fro') ^ 2) / (sigma);
@@ -117,12 +120,35 @@ if dg                                                               % vector kxx
 else
   if xeqz                                                 % symmetric matrix Kxx
     %K = sq_dist(x'/ell);
-    %K = pdist(x, @elementWrapper);
-    K = pdist(x, @(G1, G2)calcLogE(G1, G2, sigma, gamma));
+    %K = pdist(x, @(G1, G2)calcLogE(G1, G2, sigma, gamma));
+    % can't use pdist as it requires the distance function to take an 
+    % arbitrary number of rows. So use a loop instead.
+    
+    % allocate memory
+    K = zeros(size(x,1));
+    
+    % calculate element by element
+    for i = 1:size(x,1)
+        for j=1:i            
+            element = calcLogE(x(i, :), x(j,:), sigma, gamma);
+            K(i, j) = element;
+            K(j, i) = element;
+        end
+    end
   else                                                   % cross covariances Kxz
     %K = sq_dist(x'/ell,z'/ell);
     %K = pdist2(x, z, @elementWrapper);
-    K = pdist2(x, z, @(G1, G2)calcLogE(G1, G2, sigma, gamma));
+    %K = pdist2(x, z, @(G1, G2)calcLogE(G1, G2, sigma, gamma));
+    % can't use pdist2 for the same reason we can't use pdist so again use
+    % a loop instead
+    
+    % preallocate memory
+    K = zeros(size(z, 1), size(x, 1));
+    for i = 1:size(z, 1)
+        for j = 1:size(x, 1)
+            K(i, j) = calcLogE(z(i, :), x(j,:), sigma, gamma);
+        end
+    end
     
   end
 end
@@ -132,14 +158,29 @@ if nargin<4                                                        % covariances
 else                                                               % derivatives
   if i==1                                                          % wrt gamma
     %K = sf2*exp(-K/2).*K;
-    K = K.* pdist(x, @(G1, G2)gammaGrad(G1, G2, sigma, gamma));
+    % loop again
+    % calculat a matrix of coefficients and multiply it by K
+    K_coeffs = zeros(size(x, 1));
+    for i = 1:size(x,1)
+        for j=1:i            
+            element = gammaGrad(x(i, :), x(j,:), sigma, gamma);
+            K_coeffs(i, j) = element;
+            K_coeffs(j, i) = element;
+        end
+    end
+    %K = K.* pdist(x, @(G1, G2)gammaGrad(G1, G2, sigma, gamma));
+    K = K.*K_coeffs;
+    %K(1:5, 1:5)
   elseif i==2                                                       % wrt sigma
     %K = 2*sf2*exp(-K/2);end
     K = - K.* log(K);
+    %K(1:5, 1:5)
   else
     error('Unknown hyperparameter')
   end
 end
+
+
 
 end
 
