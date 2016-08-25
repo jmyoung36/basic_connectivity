@@ -1,8 +1,8 @@
 % set data directory
 % for work desktop machine
-%data_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/';
+data_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/';
 % for macbook air
-data_dir = '/Users/jonyoung/Data/Connectivity data/';
+%data_dir = '/Users/jonyoung/Data/Connectivity data/';
 
 % read in some data
 data = csvread([data_dir, 'M_connectivity_data.csv']);
@@ -10,6 +10,9 @@ labels = data(:, 1);
 connectivity_data = data(:, 2:end);
 
 connectivity_data(connectivity_data < 0) = 0;
+
+connectivity_data = connectivity_data(1:90, :);
+labels = labels(1:90);
 
 % correct labels for GPML
 labels(labels == 0) = -1;
@@ -47,7 +50,8 @@ mean_sq_dist = mean_sq_dist/c;
 % set up GP classification
 % initialise g to 0 (i.e. log(1) ) and s to log(mean_sq_dist)
 meanfunc = @meanConst; hyp.mean = 0;
-covfunc = @covLogE; gamma = 1.0; sigma = mean_sq_dist; hyp.cov = log([gamma sigma]);
+covfunc = @covLogE; gamma = 10; sigma = mean_sq_dist; hyp.cov = log([gamma sigma]);
+%covfunc = @covLINone; foo = 1.0; hyp.cov = log(foo);
 likfunc = @likErf;
 
 hyp = minimize(hyp, @gp, -40, @infEP, meanfunc, covfunc, likfunc, connectivity_data, labels);
