@@ -138,10 +138,10 @@ else
     % a loop instead
     
     % preallocate memory
-    K = zeros(size(z, 1), size(x, 1));
-    for j = 1:size(z, 1)
-        for k = 1:size(x, 1)
-            K(j, k) = calcLogE(z(j, :), x(k,:), sigma, gamma);
+    K = zeros(size(x, 1), size(z, 1));
+    for j = 1:size(x, 1)
+        for k = 1:size(z, 1)
+            K(j, k) = calcLogE(x(j, :), z(k,:), sigma, gamma);
         end
     end
     
