@@ -1,8 +1,8 @@
 % set data directory
 % for work desktop machine
-%data_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/';
+data_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/';
 % for macbook air
-data_dir = '/Users/jonyoung/Data/Connectivity data/';
+%data_dir = '/Users/jonyoung/Data/Connectivity data/';
 
 % read in some data
 data = csvread([data_dir, 'M_timecourse_connectivity_data.csv']);
@@ -10,7 +10,7 @@ labels = data(:, 1);
 connectivity_data = data(:, 2:end);
 
 % optional - only include positive connections
-%connectivity_data(connectivity_data < 0) = 0;
+connectivity_data(connectivity_data < 0) = 0;
 
 % correct labels for GPML
 labels(labels == 0) = -1;
@@ -35,11 +35,19 @@ for i = 1:size(connectivity_data,1);
 end
 
 % to hold predicted probabilities
-ps = zeros(length(labels), 1);
+%ps = zeros(length(labels), 1);
 
 % get a set of k-fold cross-validations
-k = 10;
-kf = kFold(length(labels), k);
+% k = 10;
+% kf = kFold(length(labels), k);
+
+% to hold predicted results and labels
+ps = [];
+all_test_labels = [];
+
+% get a set of k mccv splits
+k = 200;
+kf = kMCCV(length(labels), k, 0.1);
 
 % results
 predicted_p = zeros(length(labels));
@@ -63,7 +71,9 @@ for i = 1:k
     likfunc = @likErf;
     hyp_opt = minimize(hyp, @gp_K, -200, @infEP_K, covfunc, likfunc, meanfunc, K_train, training_labels);
     [a b c d lp post] = gp_K(hyp_opt, @infEP_K, covfunc, likfunc, meanfunc, K_train, training_labels, K_test, K_cross, ones(length(testing_labels), 1));
-    ps(testing_indices) = exp(lp);
+    %ps(testing_indices) = exp(lp);
+    ps = [ps; exp(lp)];
+    all_test_labels = [all_test_labels; testing_labels];
     preds = exp(lp);
     preds(preds > 0.5) = 1;
     preds(preds < 0.5) = -1;
@@ -75,10 +85,12 @@ end
 
 ps(ps > 0.5) = 1;
 ps(ps < 0.5) = -1;
-[acc, sens, spec] = accStats(labels, ps);
+%[acc, sens, spec] = accStats(labels, ps);
+[acc, sens, spec] = accStats(all_test_labels, ps);
 acc
 sens
 spec
+
 
 
 

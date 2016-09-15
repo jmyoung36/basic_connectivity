@@ -56,6 +56,46 @@ def load_connectivity_data(data_dir, standardise=True):
         
     return connectivity_data, connectivity_files
     
+def load_hcp_matrix(filename): 
+    
+    # open file and read in line by line
+    with open(filename) as infile:
+         
+         connectivity_file_data = infile.readlines()
+         
+    # split on whitespace
+    connectivity_file_data = map(lambda x: x.split(), connectivity_file_data)
+    
+    # convert to float
+    connectivity_file_data = np.array(map(lambda x: [float(element) for element in x], connectivity_file_data))
+    
+    
+    return connectivity_file_data
+    
+def load_hcp_timecourse(filename): 
+    
+    # open file and read in line by line
+    with open(filename) as infile:
+         
+         connectivity_file_data = infile.readlines()
+         
+    # split on whitespace
+    connectivity_file_data = map(lambda x: x.split(), connectivity_file_data)
+    
+    # convert to float
+    connectivity_file_data = np.array(map(lambda x: [float(element) for element in x], connectivity_file_data))
+    
+    
+    return connectivity_file_data
+
+         
+    
+
+    
+    
+    
+    
+    
 # take a directory containing .txt files containing timecourse data and a 
 # .csv file with the per-subject labels. Load the connectvity data into a 3d
 # numpy array of number of subjectsx number of regions x number of timepoints

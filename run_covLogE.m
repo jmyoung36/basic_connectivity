@@ -64,10 +64,10 @@ for i = 1:k
     % set up GP classification
     % initialise g to 0 (i.e. log(1) ) and s to log(mean_sq_dist)
     meanfunc = @meanConst; hyp.mean = 0;
-    covfunc = @covLogE; gamma = 10; sigma = mean_sq_dist; hyp.cov = log([gamma sigma]);
+    covfunc = @covLogE; gamma = 2; sigma = mean_sq_dist; hyp.cov = log([gamma sigma]);
     likfunc = @likErf;
     hyp.cov
-    hyp_opt = minimize(hyp, @gp, -100, @infEP, meanfunc, covfunc, likfunc, training_data, training_labels);
+    hyp_opt = minimize(hyp, @gp, -200, @infEP, meanfunc, covfunc, likfunc, training_data, training_labels);
     hyp_opt.cov
     [a b c d lp] = gp(hyp_opt, @infEP, meanfunc, covfunc, likfunc, training_data, training_labels, testing_data, ones(length(testing_labels), 1));
     p = exp(lp);

@@ -36,6 +36,10 @@ n = sqrt(size(G1, 2));
 M1 = reshape(G1, [n, n]);
 M2 = reshape(G2, [n, n]);
 
+% remove graph loops - set diagonal to 0
+M1 = M1 - eye(size(M1));
+M2 = M2 - eye(size(M2));
+
 % calculate degree matrices D
 D1 = diag(sum(M1, 2));
 D2 = diag(sum(M2, 2));
@@ -48,8 +52,12 @@ L2 = D2 - M2;
 S1 = L1 + (gamma * eye(n));
 S2 = L2 + (gamma * eye(n));
 
+% calculate diff-log ( logm(S1) - logm(S2) ) and its norm 
+diff_log = logm(S1) - logm(S2);
+norm_diff_log = norm(diff_log, 'fro');
+
 % return the kernel function result
-element = exp(-1 * (norm((logm(S1) - logm(S2)), 'fro') ^ 2) / sigma);
+element = exp((-1 * (norm_diff_log ^ 2)) / sigma);
 
 end
 
@@ -88,7 +96,7 @@ else
     norm_diff_log = norm(diff_log, 'fro');
 
     % calculate intermediate matrix A
-    A = g * (inv(S1) - inv(S2));
+    A = gamma * (inv(S1) - inv(S2));
 
     % calculate intermediate value b
     b = sum(sum(diff_log .*A)) / norm_diff_log;
@@ -108,7 +116,6 @@ g = hyp(1);
 s = hyp(2);
 gamma = exp(g);                                
 sigma = exp(s);
-
 
 % precompute K as we will always use it
 if dg                                                               % vector kxx
@@ -148,16 +155,14 @@ else
   end
 end
 
-%disp('kernel vals')
-%K(1:5, 1:5);
-
+% return modes
 if nargin<4                                                        % covariances
   K = K;
 else                                                               % derivatives
   if i==1                                                          % wrt gamma
     %K = sf2*exp(-K/2).*K;
     % loop again
-    % calculat a matrix of coefficients and multiply it by K
+    % calculate a matrix of coefficients and multiply it by K
     K_coeffs = zeros(size(x, 1));
     for j = 1:size(x,1)
         for k=1:j            
