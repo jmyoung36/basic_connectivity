@@ -15,8 +15,8 @@ from connectivity_utils import load_timecourse_data
 import csv
 
 # directories
-data_dir = '/Users/jonyoung/Data/Connectivity data/'
-timecourse_dir = data_dir + 'KCL_SC_Unsmooth_TimeCourse/'
+data_dir = '/home/jonyoung/IoP_data/Data/connectivity_data/'
+timecourse_dir = data_dir + 'KCL3_timecourse/'
 output_dir = timecourse_dir
 
 
@@ -26,7 +26,7 @@ timecourse_data, timecourse_files = load_timecourse_data(timecourse_dir)
 # generate structure to hold data
 sparse_inverse_covariance_matrices = np.zeros((len(timecourse_data), 8100))
 
-#print timecourse_files
+print timecourse_files
 
 # roll through the subjects
 print np.shape(timecourse_data)[0]
@@ -55,9 +55,9 @@ for i in range(np.shape(timecourse_data)[0]) :
     print cov[:5, :5]
     print linalg.logm(cov)[:5, :5]
     
-## save the data
-np.savetxt(data_dir + 'sparse_inverse_covariance_data.txt', sparse_inverse_covariance_matrices, delimiter=',')
+# save the data
+np.savetxt(output_dir + 'sparse_inverse_covariance_data.txt', sparse_inverse_covariance_matrices, delimiter=',')
 
-with open(data_dir + 'sparse_inverse_covariance_files.csv', 'wb') as myfile:
+with open(output_dir + 'sparse_inverse_covariance_files.csv', 'wb') as myfile:
     wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
     wr.writerow(timecourse_files)

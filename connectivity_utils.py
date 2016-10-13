@@ -86,15 +86,7 @@ def load_hcp_timecourse(filename):
     connectivity_file_data = np.array(map(lambda x: [float(element) for element in x], connectivity_file_data))
     
     
-    return connectivity_file_data
-
-         
-    
-
-    
-    
-    
-    
+    return connectivity_file_data   
     
 # take a directory containing .txt files containing timecourse data and a 
 # .csv file with the per-subject labels. Load the connectvity data into a 3d
@@ -110,7 +102,7 @@ def load_timecourse_data(data_dir):
     
     # generate numpy arrays for data & labels
     # each subject is 90 regions x 140 timepoints
-    timecourse_data = np.zeros((n_files, 90, 140))
+    timecourse_data = np.zeros((n_files, 90, 190))
     
     # empty list of files actually used
     final_files = []

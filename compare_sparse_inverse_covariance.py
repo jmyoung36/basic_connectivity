@@ -57,6 +57,7 @@ labels = np.array([utils.load_labels(correlation_dir + 'matrix_unsmooth/' ), ])
 # take only labels for subjects common between covariance and correlation sets.
 # initially labels are for the same subjects as correlation data so use common_correlation_indices
 labels = labels[0, common_correlation_indices]
+print len(labels)
 
 # read in the sparse inverse covariance data and cut it down to only include common subjects
 sparse_inverse_cov_data = np.genfromtxt(sparse_inverse_cov_dir + 'OAS_data.csv', delimiter=',')[common_covariance_indices,:]
